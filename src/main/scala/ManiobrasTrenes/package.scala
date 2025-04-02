@@ -4,136 +4,59 @@ package object ManiobrasTrenes {
   type Estado = (Tren, Tren, Tren)
 
   trait Movimiento
-  case class Uno(n: Int) extends Movimiento
-  case class Dos(n: Int) extends Movimiento
-
+  case class Uno(n:Int) extends Movimiento
+  case class Dos(n:Int) extends Movimiento
   type Maniobra = List[Movimiento]
 
-  def aplicarMovimiento(e: Estado, m: Movimiento): Estado ={
-    val (principal, train_one, train_two) = e
-    val principal_length = principal.length
-    val train_one_length = train_one.length
-    val train_two_length = train_two.length
+  //Estas funciones seran comentadas en el informe para hacer el codigo menos largo
 
-    m match {
-
-      case Uno(n) => n match {
-        case x if x > 0 => {  // From principal to train one
-          if(!(x > principal_length)){
-            val new_principal = remove_from_right(principal, x)
-            val new_train_one = add_to_left(extract_from_right(principal, x), train_one)
-            (new_principal, new_train_one, train_two)
-
-          }else{
-            (Nil, add_to_left(principal, train_one), train_two)
-          }
-
-        }
-        case x if x < 0 => {
-          if(!(x > principal_length)){
-            val new_train_one = remove_from_left(train_one, x)
-            val new_principal = add_to_right(extract_from_left(train_one, x), principal)
-            (new_principal, new_train_one, train_two)
-
-          }else{
-            (add_to_right(extract_from_left(train_two, x), principal), remove_from_left(train_one, x*(-1)), train_two)
-          }
-
-        }
-        case _ => {
-          println("Intente de nuevo con diferentes valores")
-          (principal, train_one, train_two)
-          //Aqui se contempla la posibilidad de que haya mas de n vagones en principal
-        }
-      }
-
-      case Dos(n) => n match {
-        case x if x > 0 => {  // From principal to train one
-          if (!(x > principal_length)) {
-            val new_principal = remove_from_right(principal, x)
-            val new_train_two = add_to_left(extract_from_right(principal, x), train_two)
-            (new_principal, train_one, new_train_two)
-
-          }else{
-            (Nil, train_one, add_to_left(extract_from_right(principal, x), train_two))
-          }
-
-        }
-        case x if x < 0 => {
-          if (!(x > principal_length)) {
-            val new_train_two = remove_from_left(train_two, x)
-            val new_principal = add_to_right(extract_from_left(train_two, x), principal)
-
-            (new_principal, train_one, new_train_two)
-          }else{
-            (add_to_right(extract_from_left(train_two, x), principal), train_one, remove_from_left(train_two, x))
-          }
-
-        }
-        case _ => {
-          println("Intente de nuevo con diferentes valores")
-          (principal, train_one,train_two)
-          //Aqui se contempla la posibilidad de que haya mas de n vagones en principal
-        }
-      }
+  def tomarDesdeIzquierda(tren: Tren, n: Int): (Tren, Tren) = (tren, n) match {
+    case (vagones, 0) => (Nil, vagones)
+    case (Nil, _) => (Nil, Nil)
+    case (head :: tail, _) =>
+      val (tomados, restantes) = tomarDesdeIzquierda(tail, n - 1)
+      (head :: tomados, restantes)
+  }
+  def tomarDesdeDerecha(tren: Tren, n: Int): (Tren, Tren) = {
+    def invertir(t: Tren): Tren = t match {
+      case Nil => Nil
+      case head :: tail => invertir(tail) ::: List(head)
     }
+
+    val (tomadosInvertidos, restantesInvertidos) = tomarDesdeIzquierda(invertir(tren), n)
+    (invertir(tomadosInvertidos), invertir(restantesInvertidos))
   }
+  def aplicarMovimiento(e:Estado,m:Movimiento) = m match {
+  case Uno(n) if n < 0 =>
+  val (vagonesTomados, nuevosTren2) = tomarDesdeIzquierda(e._2, -n)
+  (vagonesTomados ::: e._1, nuevosTren2, e._3)
 
-  def add_to_left(list: Tren, target: Tren): Tren = {
-    if (list.isEmpty) {
-      target
-    } else {
-      list.head :: add_to_left(list.tail, target)
-    }
+  case Uno(n) if n == 0 =>
+  e // No hace nada si n igual a 0
+
+  case Uno(n) if n > 0 =>
+  val (vagonesTomados, nuevosTren1) = tomarDesdeDerecha(e._1, n)
+  (nuevosTren1, vagonesTomados ::: e._2, e._3)
+
+    // Movimiento Dos
+  case Dos(n) if n < 0 =>
+  val (vagonesTomados, nuevosTren3) = tomarDesdeIzquierda(e._3, -n)
+  (vagonesTomados ::: e._1, e._2, nuevosTren3)
+
+  case Dos(n) if n == 0 =>
+  e // No hacer nada
+
+  case Dos(n) if n > 0 =>
+  val (vagonesTomados, nuevosTren1) = tomarDesdeDerecha(e._1, n)
+  (nuevosTren1, e._2, vagonesTomados ::: e._3 )
   }
+  def aplicarMovimientos(e:Estado,movimientos:Maniobra): List[Estado] = movimientos match {
+    case Nil => List(e)
+    case primerMovimiento::movimientosR =>
+      val nuevoE = aplicarMovimiento(e,primerMovimiento)
+      e::aplicarMovimientos(nuevoE,movimientosR)
 
-  def add_to_right(list: Tren, target: Tren): Tren = {
-    add_to_left(target, list)
+
   }
-
-
-
-  def remove_from_left(list: Tren, elements_to_remove: Int): Tren = {
-    if(elements_to_remove == 0){
-      list
-    }else{
-      remove_from_left(list.tail, elements_to_remove - 1)
-    }
-  }
-
-  def remove_from_right(train: Tren, elements_to_remove: Int): Tren = {
-    val n = train.length - elements_to_remove
-    if (n == 0) {
-      List()
-    } else {
-      train.head :: remove_from_right(train.tail, n - 1)
-    }
-  }
-
-  def extract_from_left(train: Tren, elements_to_extract: Int): Tren = {
-    if(elements_to_extract == 0){
-      List()
-    }else{
-      train.head :: extract_from_left(train.tail, elements_to_extract-1)
-    }
-  }
-
-  def extract_from_right(train: Tren, elements_to_extract: Int): Tren = {
-    val n = train.length - elements_to_extract
-    if(n == 0){
-      train
-    }else{
-      extract_from_right(train.tail, n - 1)
-    }
-  }
-
-
-  /*def aplicarMovimientos(e: Estado, movs: Maniobra): List[Estado] = {
-  ...
-  }
-
-  def definirManiobra(t1: Tren, t2: Tren): Maniobra ={
-  ...
-  }*/
-
 }
+  
