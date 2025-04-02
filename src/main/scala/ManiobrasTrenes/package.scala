@@ -29,7 +29,7 @@ package object ManiobrasTrenes {
   def aplicarMovimiento(e:Estado,m:Movimiento) = m match {
   case Uno(n) if n < 0 =>
   val (vagonesTomados, nuevosTren2) = tomarDesdeIzquierda(e._2, -n)
-  (vagonesTomados ::: e._1, nuevosTren2, e._3)
+  (e._1 ::: vagonesTomados , nuevosTren2, e._3)
 
   case Uno(n) if n == 0 =>
   e // No hace nada si n igual a 0
@@ -41,7 +41,7 @@ package object ManiobrasTrenes {
     // Movimiento Dos
   case Dos(n) if n < 0 =>
   val (vagonesTomados, nuevosTren3) = tomarDesdeIzquierda(e._3, -n)
-  (vagonesTomados ::: e._1, e._2, nuevosTren3)
+  (e._1 ::: vagonesTomados, e._2, nuevosTren3)
 
   case Dos(n) if n == 0 =>
   e // No hacer nada
@@ -51,7 +51,7 @@ package object ManiobrasTrenes {
   (nuevosTren1, e._2, vagonesTomados ::: e._3 )
   }
   def aplicarMovimientos(e:Estado,movimientos:Maniobra): List[Estado] = movimientos match {
-    case Nil => List(e)
+    case Nil => List()
     case primerMovimiento::movimientosR =>
       val nuevoE = aplicarMovimiento(e,primerMovimiento)
       e::aplicarMovimientos(nuevoE,movimientosR)
@@ -60,3 +60,4 @@ package object ManiobrasTrenes {
   }
 }
   
+
