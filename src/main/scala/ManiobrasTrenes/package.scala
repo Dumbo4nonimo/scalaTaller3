@@ -58,6 +58,22 @@ package object ManiobrasTrenes {
 
 
   }
+  def definirManiobra(actual: Tren, objetivo: Tren): Maniobra = {
+    if (actual.isEmpty && objetivo.isEmpty) Nil
+    else if (actual.isEmpty || objetivo.isEmpty) Nil
+    else (actual, objetivo) match {
+      case (a :: as, b :: bs) if a == b => definirManiobra(as, bs)
+      case (as, b :: bs) =>
+        as.indexOf(b) match {
+          case pos if pos > 0 =>
+            Uno(pos) :: Dos(pos) :: definirManiobra(as.drop(pos + 1), bs)
+          case 0 =>
+            Uno(-1) :: definirManiobra(as.tail, objetivo)
+          case _ => Nil
+        }
+      case _ => Nil
+    }
+  }
 }
   
 
